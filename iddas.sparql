@@ -65,10 +65,10 @@ WHERE {
     FILTER(REGEX(?_title, '{{searchTerm}}', 'i') || REGEX(?description, '{{searchTerm}}', 'i') || REGEX(?used, '{{searchTerm}}', 'i')) . 
     {%- endif %}
 	{%- if startDate %}
-    FILTER (BOUND(?startDate) && ?startDate >= '{{startDate}}'^^xsd:date) .
+    FILTER (BOUND(?startDate) && ?startDate >= {{startDate | xsd('xsd:date')}}) .
 	{%- endif %}
 	{%- if endDate %}
-    FILTER (BOUND(?endDate) && ?endDate <= '{{endDate}}'^^xsd:date) .
+    FILTER (BOUND(?endDate) && ?endDate <= {{endDate | xsd('xsd:date')}}) .
 	{%- endif %}
 	{# issues with geof;sfWithin to be discussed with paul@maris
         | also the query should start from 4 variables for nort-east-south-west-boundaries 
