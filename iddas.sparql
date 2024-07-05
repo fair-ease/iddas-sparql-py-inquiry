@@ -70,12 +70,9 @@ WHERE {
 	{%- if endDate %}
     FILTER (BOUND(?endDate) && ?endDate <= {{endDate | xsd('xsd:date')}}) .
 	{%- endif %}
-	{# issues with geof;sfWithin to be discussed with paul@maris
-        | also the query should start from 4 variables for nort-east-south-west-boundaries 
-        | - if nb and eb and sb and wb %}
-        | FILTER(BOUND(?bbox) && geof:sfWithin(?bbox, 'POLYGON(({{wb}} {{sb}}, {{eb}} {{sb}}, {{eb}} {{nb}}, {{wb}} {{nb}}, {{wb}} {{sb}}))'^^geo:wktLiteral))
-	    | {%- endif %}
-    #}
+	{%- if nb and eb and sb and wb %}
+    FILTER(BOUND(?bbox) && geof:sfWithin(?bbox, 'POLYGON(({{wb}} {{sb}}, {{eb}} {{sb}}, {{eb}} {{nb}}, {{wb}} {{nb}}, {{wb}} {{sb}}))'^^geo:wktLiteral))
+	{%- endif %}
 	{%- if parameter %}
     FILTER (BOUND(?parameterName) && ?parameterName = '{{parameter}}') .
 	{%- endif %}
