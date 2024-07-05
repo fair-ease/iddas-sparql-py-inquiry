@@ -1,0 +1,2 @@
+pykg2tbl @ git+https://github.com/vliz-be-opsci/pykg2tbl@main
+pyrdfj2 @ git+https://github.com/vliz-be-opsci/pyrdfj2@main
