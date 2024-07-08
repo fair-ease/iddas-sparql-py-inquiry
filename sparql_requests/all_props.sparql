@@ -1,0 +1,4 @@
+SELECT ?property (COUNT(?property) AS ?count)
+WHERE {
+  ?subject ?property ?object .
+} GROUP BY ?property ORDER BY DESC(?count)
