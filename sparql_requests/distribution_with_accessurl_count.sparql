@@ -1,0 +1,14 @@
+PREFIX dcat:    <http://www.w3.org/ns/dcat#>
+PREFIX dc:      <http://purl.org/dc/terms/>
+
+SELECT (count(distinct ?dataset) as ?number_of_datasets_with_distribution_with_accessurl)
+WHERE {
+    
+    ?dataset a dcat:Dataset ;
+        dc:title ?_title ;
+        dc:description ?description .
+
+	?dataset dcat:distribution ?distribution .
+  
+  	?distribution dcat:accessURL ?accessURL .
+}
