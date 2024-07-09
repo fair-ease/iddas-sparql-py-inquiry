@@ -9,35 +9,50 @@ PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
 PREFIX geo: <http://www.opengis.net/ont/geosparql#>
 PREFIX schema: <https://schema.org/>
 
-SELECT DISTINCT ?catalog_name 
+SELECT  DISTINCT ?catalog_name
 		(IF(BOUND(?nb), ?nb, 0) AS ?number_datasets) 
 		(IF(BOUND(?nb_url), ?nb_url, 0) AS ?number_datasets_with_url) 
 		(IF(BOUND(?nb_dist), ?nb_dist, 0) AS ?number_datasets_with_distribution) WHERE {
+  # Get ALL catalog name
   OPTIONAL {
-    SELECT (IF(BOUND(?catalog_title), ?catalog_title, IF(BOUND(?catalog_label), ?catalog_label, "No Title")) AS ?catalog_name)
+    SELECT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)
+    WHERE {
+      ?catalog a dcat:Catalog ;
+
+      OPTIONAL { ?catalog dct:title ?catalog_title . }
+      OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+  	}
+    GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
+  }
+  # Get datasets numbers per catalog
+  OPTIONAL {
+    SELECT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)
            (COUNT(DISTINCT ?dataset) AS ?nb)
     WHERE {
       ?dataset a dcat:Dataset ;
                dc:title ?_title ;
                dc:description ?description .
+
       ?catalog a dcat:Catalog ;
-               dcat:dataset ?dataset .
+          dcat:dataset ?dataset .
+
       OPTIONAL { ?catalog dct:title ?catalog_title . }
       OPTIONAL { ?catalog rdfs:label ?catalog_label . }
     }
-    GROUP BY ?catalog_title ?catalog_label
+    GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
   }
+  # Get datasets with download URL numbers per catalog
   OPTIONAL {
-    SELECT DISTINCT (IF(BOUND(?catalog_title), ?catalog_title, IF(BOUND(?catalog_label), ?catalog_label, "No Title")) AS ?catalog_name)  
+    SELECT DISTINCT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)  
             (COUNT(DISTINCT ?dataset) AS ?nb_url)
     WHERE {
 
         ?dataset a dcat:Dataset ;
             dc:title ?_title ;
             dc:description ?description .
-
-        ?catalog a dcat:Catalog ;
-            dcat:dataset ?dataset .
+      
+      ?catalog a dcat:Catalog ;
+          dcat:dataset ?dataset .
 
         OPTIONAL { ?catalog dct:title ?catalog_title . }
         OPTIONAL { ?catalog rdfs:label ?catalog_label . }
@@ -53,8 +68,9 @@ SELECT DISTINCT ?catalog_name
 
     } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
   }
-    OPTIONAL {
-    SELECT DISTINCT (IF(BOUND(?catalog_title), ?catalog_title, IF(BOUND(?catalog_label), ?catalog_label, "No Title")) AS ?catalog_name)  
+  # Get datasets with distribution per catalog
+  OPTIONAL {
+    SELECT DISTINCT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)  
             (COUNT(DISTINCT ?dataset) AS ?nb_dist)
     WHERE {
 
@@ -62,8 +78,8 @@ SELECT DISTINCT ?catalog_name
             dc:title ?_title ;
             dc:description ?description .
 
-        ?catalog a dcat:Catalog ;
-            dcat:dataset ?dataset .
+      ?catalog a dcat:Catalog ;
+          dcat:dataset ?dataset .
 
         OPTIONAL { ?catalog dct:title ?catalog_title . }
         OPTIONAL { ?catalog rdfs:label ?catalog_label . }
@@ -74,4 +90,3 @@ SELECT DISTINCT ?catalog_name
     } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
   }
 }
-ORDER BY DESC(?catalog_name)
