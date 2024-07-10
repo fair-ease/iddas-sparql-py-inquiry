@@ -1,21 +1,16 @@
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 PREFIX dc: <http://purl.org/dc/terms/>
-PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
-PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-PREFIX schema: <https://schema.org/>
 
 SELECT  DISTINCT ?catalog_name
-		(IF(BOUND(?nb), ?nb, 0) AS ?number_datasets) 
-		(IF(BOUND(?nb_url), ?nb_url, 0) AS ?number_datasets_with_url) 
-		(IF(BOUND(?nb_dist), ?nb_dist, 0) AS ?number_datasets_with_distribution) WHERE {
+		(COALESCE(?nb, 0) AS ?number_datasets) 
+		(COALESCE(?nb_dist, 0) AS ?number_datasets_with_distribution) 
+		(COALESCE(?nb_url, 0) AS ?number_datasets_with_url) 
+WHERE {
   # Get ALL catalog name
   OPTIONAL {
-    SELECT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)
+    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)
     WHERE {
       ?catalog a dcat:Catalog ;
 
@@ -26,7 +21,7 @@ SELECT  DISTINCT ?catalog_name
   }
   # Get datasets numbers per catalog
   OPTIONAL {
-    SELECT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)
+    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)
            (COUNT(DISTINCT ?dataset) AS ?nb)
     WHERE {
       ?dataset a dcat:Dataset ;
@@ -43,7 +38,7 @@ SELECT  DISTINCT ?catalog_name
   }
   # Get datasets with download URL numbers per catalog
   OPTIONAL {
-    SELECT DISTINCT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)  
+    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
             (COUNT(DISTINCT ?dataset) AS ?nb_url)
     WHERE {
 
@@ -57,20 +52,15 @@ SELECT  DISTINCT ?catalog_name
         OPTIONAL { ?catalog dct:title ?catalog_title . }
         OPTIONAL { ?catalog rdfs:label ?catalog_label . }
 
-        OPTIONAL {
-            ?dataset dcat:distribution ?distribution .
-            ?distribution a dcat:Distribution ;
-                    dcat:mediaType ?_mediaType .
-        }
-
-        ?distribution dcat:downloadURL ?downloadURL .
-
+      ?dataset dcat:distribution ?distribution .
+      ?distribution a dcat:Distribution ;
+               dcat:downloadURL ?downloadURL .
 
     } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
   }
   # Get datasets with distribution per catalog
   OPTIONAL {
-    SELECT DISTINCT (IF(BOUND(?catalog_title), ?catalog_title, ?catalog_label) AS ?catalog_name)  
+    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
             (COUNT(DISTINCT ?dataset) AS ?nb_dist)
     WHERE {
 
