@@ -3,146 +3,178 @@ PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 PREFIX dc: <http://purl.org/dc/terms/>
 
-SELECT  DISTINCT ?catalog_name
-		(COALESCE(?nb, 0) AS ?cnt_datasets) 
-		(COALESCE(?nb_dist, 0) AS ?cnt_datasets_dist) 
-		(COALESCE(?nb_url, 0) AS ?cnt_datasets_dlurl) 
-		(COALESCE(?nb_url_a, 0) AS ?cnt_datasets_accessurl) 
-		(COALESCE(?nb_identifier, 0) AS ?cnt_datasets_id) 
-		(COALESCE(?nb_mediatype, 0) AS ?cnt_datasets_mediatype) 
+SELECT DISTINCT ?catalog_name
+                (COALESCE(?nb, 0) AS ?cnt_datasets) 
+                (COALESCE(?nb_dist, 0) AS ?cnt_datasets_dist) 
+                (COALESCE(?nb_url, 0) AS ?cnt_datasets_dlurl) 
+                (COALESCE(?nb_url_a, 0) AS ?cnt_datasets_accessurl) 
+                (COALESCE(?nb_identifier, 0) AS ?cnt_datasets_id) 
+                (COALESCE(?nb_mediatype, 0) AS ?cnt_datasets_mediatype)
 WHERE {
-  # Get ALL catalog name
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)
-    WHERE {
-      ?catalog a dcat:Catalog ;
-
-      OPTIONAL { ?catalog dct:title ?catalog_title . }
-      OPTIONAL { ?catalog rdfs:label ?catalog_label . }
-  	}
-    GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
-  }
-  # Get datasets numbers per catalog
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)
-           (COUNT(DISTINCT ?dataset) AS ?nb)
-    WHERE {
-      ?dataset a dcat:Dataset ;
-               dc:title ?_title ;
-               dc:description ?description .
-
-      ?catalog a dcat:Catalog ;
-          dcat:dataset ?dataset .
-
-      OPTIONAL { ?catalog dct:title ?catalog_title . }
-      OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+  
+  {
+    # Calculate totals
+    BIND("All catalog" AS ?catalog_name)
+    # Get total datasets number
+    {
+      SELECT (COUNT(DISTINCT ?dataset) AS ?nb)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+      }
     }
-    GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
-  }
-  # Get datasets with distribution per catalog
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
-            (COUNT(DISTINCT ?dataset) AS ?nb_dist)
-    WHERE {
-
-        ?dataset a dcat:Dataset ;
-            dc:title ?_title ;
-            dc:description ?description .
-
-      ?catalog a dcat:Catalog ;
-          dcat:dataset ?dataset .
-
-        OPTIONAL { ?catalog dct:title ?catalog_title . }
-        OPTIONAL { ?catalog rdfs:label ?catalog_label . }
-
+    # Get total datasets with distribution
+    {
+      SELECT (COUNT(DISTINCT ?dataset) AS ?nb_dist)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
         ?dataset dcat:distribution ?distribution .
-
-
-    } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
+      }
+    }
+    # Get total datasets with download URL
+    {
+      SELECT (COUNT(DISTINCT ?dataset) AS ?nb_url)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        ?dataset dcat:distribution ?distribution .
+        ?distribution dcat:downloadURL ?downloadURL .
+      }
+    }
+    # Get total datasets with access URL
+    {
+      SELECT (COUNT(DISTINCT ?dataset) AS ?nb_url_a)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        ?dataset dcat:distribution ?distribution .
+        ?distribution dcat:accessURL ?accessURL .
+      }
+    }
+    # Get total datasets with identifier
+    {
+      SELECT (COUNT(DISTINCT ?dataset) AS ?nb_identifier)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        ?dataset dct:identifier ?identifier .
+      }
+    }
+    # Get total datasets with mediatype
+    {
+      SELECT (COUNT(DISTINCT ?dataset) AS ?nb_mediatype)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        ?dataset dcat:distribution ?distribution .
+        ?distribution dcat:mediaType ?mediaType .
+      }
+    }
   }
-  # Get datasets with download URL numbers per catalog
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
-            (COUNT(DISTINCT ?dataset) AS ?nb_url)
-    WHERE {
-
-        ?dataset a dcat:Dataset ;
-            dc:title ?_title ;
-            dc:description ?description .
-      
-      ?catalog a dcat:Catalog ;
-          dcat:dataset ?dataset .
-
+  UNION
+  {
+    # Get ALL catalog name
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)
+      WHERE {
+        ?catalog a dcat:Catalog ;
         OPTIONAL { ?catalog dct:title ?catalog_title . }
         OPTIONAL { ?catalog rdfs:label ?catalog_label . }
-
-      ?dataset dcat:distribution ?distribution .
-      
-      ?distribution dcat:downloadURL ?downloadURL .
-
-    } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
-  }
-  # Get datasets with access URL numbers per catalog
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
-            (COUNT(DISTINCT ?dataset) AS ?nb_url_a)
-    WHERE {
-
-        ?dataset a dcat:Dataset ;
-            dc:title ?_title ;
-            dc:description ?description .
-      
-      ?catalog a dcat:Catalog ;
-          dcat:dataset ?dataset .
-
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
+    # Get datasets numbers per catalog
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)
+                     (COUNT(DISTINCT ?dataset) AS ?nb)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
         OPTIONAL { ?catalog dct:title ?catalog_title . }
         OPTIONAL { ?catalog rdfs:label ?catalog_label . }
-
-      ?dataset dcat:distribution ?distribution .
-      
-      ?distribution dcat:accessURL ?accessURL .
-
-    } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
-  }
-  # Get datasets with identifier per catalog
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
-            (COUNT(DISTINCT ?dataset) AS ?nb_identifier)
-    WHERE {
-      ?dataset a dcat:Dataset ;
-               dc:title ?_title ;
-               dc:description ?description .
-
-      ?catalog a dcat:Catalog ;
-               dcat:dataset ?dataset .
-
-      OPTIONAL { ?catalog dct:title ?catalog_title . }
-      OPTIONAL { ?catalog rdfs:label ?catalog_label . }
-
-	  ?dataset dct:identifier ?identifier .
-
-    } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
-  }
-  # Get datasets with mediatype per catalog
-  OPTIONAL {
-    SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
-            (COUNT(DISTINCT ?dataset) AS ?nb_mediatype)
-    WHERE {
-      ?dataset a dcat:Dataset ;
-               dc:title ?_title ;
-               dc:description ?description .
-
-      ?catalog a dcat:Catalog ;
-               dcat:dataset ?dataset .
-
-      OPTIONAL { ?catalog dct:title ?catalog_title . }
-      OPTIONAL { ?catalog rdfs:label ?catalog_label . }
-
-
-      ?dataset dcat:distribution ?distribution .
-      
-      ?distribution dcat:mediaType ?mediaType .
-
-    } GROUP BY ?catalog_title ?catalog_label order by desc(?catalog_name)
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
+    # Get datasets with distribution per catalog
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
+                     (COUNT(DISTINCT ?dataset) AS ?nb_dist)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        OPTIONAL { ?catalog dct:title ?catalog_title . }
+        OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+        ?dataset dcat:distribution ?distribution .
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
+    # Get datasets with download URL numbers per catalog
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
+                     (COUNT(DISTINCT ?dataset) AS ?nb_url)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        OPTIONAL { ?catalog dct:title ?catalog_title . }
+        OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+        ?dataset dcat:distribution ?distribution .
+        ?distribution dcat:downloadURL ?downloadURL .
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
+    # Get datasets with access URL numbers per catalog
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
+                     (COUNT(DISTINCT ?dataset) AS ?nb_url_a)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        OPTIONAL { ?catalog dct:title ?catalog_title . }
+        OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+        ?dataset dcat:distribution ?distribution .
+        ?distribution dcat:accessURL ?accessURL .
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
+    # Get datasets with identifier per catalog
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
+                     (COUNT(DISTINCT ?dataset) AS ?nb_identifier)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        OPTIONAL { ?catalog dct:title ?catalog_title . }
+        OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+        ?dataset dct:identifier ?identifier .
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
+    # Get datasets with mediatype per catalog
+    OPTIONAL {
+      SELECT DISTINCT (COALESCE(?catalog_title, ?catalog_label) AS ?catalog_name)  
+                     (COUNT(DISTINCT ?dataset) AS ?nb_mediatype)
+      WHERE {
+        ?dataset a dcat:Dataset .
+        ?catalog a dcat:Catalog ;
+                 dcat:dataset ?dataset .
+        OPTIONAL { ?catalog dct:title ?catalog_title . }
+        OPTIONAL { ?catalog rdfs:label ?catalog_label . }
+        ?dataset dcat:distribution ?distribution .
+        ?distribution dcat:mediaType ?mediaType .
+      }
+      GROUP BY ?catalog_title ?catalog_label ORDER BY DESC(?catalog_name)
+    }
   }
 }
