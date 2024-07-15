@@ -1,0 +1,5 @@
+SELECT DISTINCT ?p
+WHERE {
+    ?s a <http://www.w3.org/ns/dcat#DataService> .
+    ?s ?p ?o .
+} limit 1000

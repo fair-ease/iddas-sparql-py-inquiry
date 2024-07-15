@@ -1,0 +1,8 @@
+SELECT DISTINCT ?p ?o
+WHERE {
+    ?s a <http://www.w3.org/ns/hydra/core#PartialCollectionView> .
+    ?s ?p ?o .
+} limit 1000
+
+
+

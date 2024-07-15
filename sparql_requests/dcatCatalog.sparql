@@ -1,0 +1,5 @@
+SELECT DISTINCT ?s ?type
+WHERE {
+    ?s a <http://www.w3.org/ns/dcat#Catalog> .
+    ?s a ?type .
+} limit 1000

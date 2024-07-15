@@ -1,0 +1,5 @@
+SELECT DISTINCT ?o
+WHERE {
+    ?s a <http://www.w3.org/ns/dcat#Dataset> .
+    ?s <http://www.w3.org/ns/prov#used> ?o .
+} limit 1000
