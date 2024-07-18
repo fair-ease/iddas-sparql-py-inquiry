@@ -1,0 +1,102 @@
+{#- Jinja Template --> Sparql Query
+ | Variables in template:
+ |    - (optional) count: count the number of datasets (Default: false)
+ |    - (optional) searchTerm: search term to filter by (Default: null)
+ |    - (optional) startDate: filter by start date (Default: null)
+ |    - (optional) endDate: filter by end date (Default: null)
+ |    - (optional) nb, eb, sb, wb: filter by polygon (Default: null)
+ |    - (optional) parameter: filter by parameter (Default: null)
+ |    - (optional) catalog: filter by catalog (Default: null)
+ |    - (optional) mediaType: filter by media type (Default: null)
+ |    - (optional) limit: limit to apply to the query (Default: null)
+ |    - (optional) offset: offset to apply to the query (Default: null)
+-#}
+PREFIX dcat:    <http://www.w3.org/ns/dcat#>
+PREFIX dc:      <http://purl.org/dc/terms/>
+PREFIX prov:    <http://www.w3.org/ns/prov#>
+PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
+PREFIX geof:    <http://www.opengis.net/def/function/geosparql/>
+PREFIX geo:     <http://www.opengis.net/ont/geosparql#>
+PREFIX schema:  <https://schema.org/>
+SELECT 
+{{ "(COUNT(DISTINCT ?dataset) AS ?count)" if count 
+else "DISTINCT (GROUP_CONCAT(DISTINCT ?_title; SEPARATOR=' ') AS ?title) (GROUP_CONCAT(DISTINCT ?_mediaType; SEPARATOR='|') AS ?mediaType) ?dataset (REPLACE(STR(?catalog), '\\\\?.*$', '') AS ?cleanCatalog) ?description (GROUP_CONCAT(DISTINCT ?accessURL; SEPARATOR=' ') AS ?accessURLs) ?endpointURL ?identifier ?theme"}}
+WHERE {
+    
+    ?dataset a dcat:Dataset ;
+        dc:title ?_title ;
+        dc:description ?description .
+    
+    OPTIONAL {
+        ?dataset dc:temporal [
+            a dc:PeriodOfTime ;
+            dcat:startDate ?startDate ;
+            dcat:endDate ?endDate
+        ] .
+    }
+    
+    OPTIONAL {
+        ?dataset dc:spatial [
+            a dc:Location ;
+            dcat:bbox ?bbox
+        ] .
+    }
+    
+    OPTIONAL {
+        ?dataset schema:variableMeasured [
+            a schema:PropertyValue ;
+            schema:name ?parameterName
+        ] .
+    }   
+    OPTIONAL {
+        ?dataset prov:used ?used .
+    }
+    OPTIONAL {
+        ?catalog a dcat:Catalog ;
+            dcat:dataset ?dataset .
+    }
+
+    OPTIONAL {
+        ?dataset dcat:distribution ?distribution .
+        ?distribution a dcat:Distribution ;
+                dcat:mediaType ?_mediaType ;
+                dcat:endpointURL ?endpointURL ;
+                dcat:accessURL ?accessURL .
+    }
+
+    OPTIONAL {
+        ?dataset dc:identifier ?identifier .
+    }
+
+    OPTIONAL {
+        ?dataset dcat:theme ?theme .
+    }
+
+    {%- if searchTerm %}
+    FILTER(REGEX(?_title, '{{searchTerm}}', 'i') || REGEX(?description, '{{searchTerm}}', 'i') || REGEX(?used, '{{searchTerm}}', 'i')) . 
+    {%- endif %}
+	{%- if startDate %}
+    FILTER (BOUND(?startDate) && ?startDate >= {{startDate | xsd('xsd:date')}}) .
+	{%- endif %}
+	{%- if endDate %}
+    FILTER (BOUND(?endDate) && ?endDate <= {{endDate | xsd('xsd:date')}}) .
+	{%- endif %}
+	{%- if nb and eb and sb and wb %}
+    FILTER(BOUND(?bbox) && geof:sfWithin(?bbox, 'POLYGON(({{wb}} {{sb}}, {{eb}} {{sb}}, {{eb}} {{nb}}, {{wb}} {{nb}}, {{wb}} {{sb}}))'^^geo:wktLiteral))
+	{%- endif %}
+	{%- if parameter %}
+    FILTER (BOUND(?parameterName) && ?parameterName = '{{parameter}}') .
+	{%- endif %}
+	{%- if catalog %}
+    FILTER (BOUND(?catalog) && STRSTARTS(STR(?catalog), '{{catalog}}') ) .
+	{%- endif %}
+	{%- if mediaType %}
+    FILTER (BOUND(?_mediaType) && ?_mediaType = '{{mediaType}}') .
+	{%- endif %}
+
+} 
+{%- if not count %}
+GROUP BY  ?dataset ?description ?startDate ?endDate ?bbox ?used ?parameterName ?catalog ?accessURL ?endpointURL ?identifier ?theme
+{{ "OFFSET " ~ offset if offset else "" }}
+{{ "LIMIT " ~ limit if limit else "" }}
+{%- endif %}
