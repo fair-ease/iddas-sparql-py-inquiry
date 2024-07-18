@@ -20,12 +20,12 @@ PREFIX geo:     <http://www.opengis.net/ont/geosparql#>
 PREFIX schema:  <https://schema.org/>
 SELECT 
 {{ "(COUNT(DISTINCT ?dataset) AS ?count)" if count 
-else "DISTINCT (GROUP_CONCAT(DISTINCT ?_title; SEPARATOR=' ') AS ?title) (GROUP_CONCAT(DISTINCT ?_mediaType; SEPARATOR='|') AS ?mediaType) ?dataset (REPLACE(STR(?catalog), '\\\\?.*$', '') AS ?cleanCatalog) ?description (GROUP_CONCAT(DISTINCT ?accessURL; SEPARATOR=' ') AS ?accessURLs) ?endpointURL ?identifier ?theme"}}
+else "DISTINCT ?dataset (SAMPLE(?_title) AS ?title) (REPLACE(STR(SAMPLE(?catalog)), '\\\\?.*$', '') AS ?cleanCatalog) (SAMPLE(?_description) AS ?description) (GROUP_CONCAT(DISTINCT ?accessURL; SEPARATOR=' ') AS ?accessURLs) (SAMPLE(?_endpointURL) AS ?endpointURL) (SAMPLE(?_identifier) AS ?identifier) (SAMPLE(?_theme) AS ?theme)"}}
 WHERE {
     
     ?dataset a dcat:Dataset ;
         dc:title ?_title ;
-        dc:description ?description .
+        dc:description ?_description .
     
     OPTIONAL {
         ?dataset dc:temporal [
@@ -56,24 +56,28 @@ WHERE {
             dcat:dataset ?dataset .
     }
 
+    ?dataset dcat:distribution ?distribution .
+    
     OPTIONAL {
-        ?dataset dcat:distribution ?distribution .
-        ?distribution a dcat:Distribution ;
-                dcat:mediaType ?_mediaType ;
-                dcat:endpointURL ?endpointURL ;
-                dcat:accessURL ?accessURL .
+        ?distribution dcat:mediaType ?_mediaType .
+    }
+    OPTIONAL {
+        ?distribution dcat:endpointURL ?_endpointURL .
+    }
+    OPTIONAL {
+        ?distribution dcat:accessURL ?accessURL .
     }
 
     OPTIONAL {
-        ?dataset dc:identifier ?identifier .
+        ?dataset dc:identifier ?_identifier .
     }
 
     OPTIONAL {
-        ?dataset dcat:theme ?theme .
+        ?dataset dcat:theme ?_theme .
     }
 
     {%- if searchTerm %}
-    FILTER(REGEX(?_title, '{{searchTerm}}', 'i') || REGEX(?description, '{{searchTerm}}', 'i') || REGEX(?used, '{{searchTerm}}', 'i')) . 
+    FILTER(REGEX(?_title, '{{searchTerm}}', 'i') || REGEX(?_description, '{{searchTerm}}', 'i') || REGEX(?used, '{{searchTerm}}', 'i')) . 
     {%- endif %}
 	{%- if startDate %}
     FILTER (BOUND(?startDate) && ?startDate >= {{startDate | xsd('xsd:date')}}) .
@@ -96,7 +100,8 @@ WHERE {
 
 } 
 {%- if not count %}
-GROUP BY  ?dataset ?description ?startDate ?endDate ?bbox ?used ?parameterName ?catalog ?accessURL ?endpointURL ?identifier ?theme
+GROUP BY  ?dataset
 {{ "OFFSET " ~ offset if offset else "" }}
 {{ "LIMIT " ~ limit if limit else "" }}
 {%- endif %}
+
