@@ -8,8 +8,8 @@
  |    - (optional) parameter: filter by parameter (Default: null)
  |    - (optional) catalog: filter by catalog (Default: null)
  |    - (optional) mediaType: filter by media type (Default: null)
- |    - (optional) limit: limit to apply to the query (Default: 10)
- |    - (optional) offset: offset to apply to the query (Default: 0)
+ |    - (optional) limit: limit to apply to the query (Default: null)
+ |    - (optional) offset: offset to apply to the query (Default: null)
 -#}
 PREFIX dcat:    <http://www.w3.org/ns/dcat#>
 PREFIX dc:      <http://purl.org/dc/terms/>
@@ -86,6 +86,6 @@ WHERE {
 } 
 {%- if not count %}
 GROUP BY  ?dataset ?description ?startDate ?endDate ?bbox ?used ?parameterName ?catalog 
-{{ "OFFSET " ~ offset if offset else "OFFSET 0" }}
-{{ "LIMIT " ~ limit if limit else "LIMIT 10" }}
+{{ "OFFSET " ~ offset if offset else "" }}
+{{ "LIMIT " ~ limit if limit else "" }}
 {%- endif %}
